@@ -39,6 +39,16 @@ const themeCss: Record<MarkdownTheme, string> = {
     td { border-top: 1px solid #e2e8f0; color: #475569; }
     blockquote { background: #eff6ff; border-color: #3b82f6; color: #1f2937; }
   `,
+  github: `
+    body { background: #ffffff; color: #24292f; font-family: 'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif; }
+    a { color: #0969da; }
+    pre { background: #f6f8fa; border: 1px solid #d0d7de; color: #24292f; }
+    code { background: #f6f8fa; padding: 2px 6px; border-radius: 8px; border: 1px solid #d0d7de; }
+    table { border: 1px solid #d0d7de; }
+    th { background: #f6f8fa; color: #57606a; text-transform: uppercase; font-size: 12px; letter-spacing: 0.08em; }
+    td { border-top: 1px solid #d0d7de; color: #24292f; }
+    blockquote { background: transparent; border-color: #d0d7de; color: #57606a; }
+  `,
   serif: `
     body { background: radial-gradient(circle at 20% 20%, #fff7e6 0%, #ffffff 45%); color: #1f2937; font-family: 'Georgia','Songti SC',serif; }
     a { color: #92400e; text-decoration: underline; }
@@ -111,10 +121,65 @@ const themeCss: Record<MarkdownTheme, string> = {
   `,
 };
 
-export const markdownToHtml = async (markdown: string, theme: MarkdownTheme, title?: string) => {
-  const processed = await unified().use(remarkParse).use(remarkGfm).use(remarkMath).use(remarkRehype).use(rehypeKatex).use(rehypeStringify).process(markdown || '');
+const katexExtraCss = `
+  .katex { color: inherit; }
+  .katex-display { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; margin: 1rem 0; }
+  .katex-error { color: #dc2626; }
+`;
+
+type PrintOptions = {
+  widthMm?: number;
+  heightMm?: number;
+  orientation?: 'portrait' | 'landscape';
+  marginMm?: number;
+};
+
+export const markdownToHtml = async (markdown: string, theme: MarkdownTheme, title?: string, print?: PrintOptions) => {
+  const katexOptions: any = {
+    throwOnError: false,
+    strict: false,
+    trust: false,
+    errorColor: '#dc2626',
+    macros: {
+      "\\RR": "\\mathbb{R}",
+      "\\NN": "\\mathbb{N}",
+      "\\ZZ": "\\mathbb{Z}",
+      "\\QQ": "\\mathbb{Q}",
+      "\\CC": "\\mathbb{C}",
+      "\\bm": "\\boldsymbol{#1}",
+      "\\argmin": "\\mathop{\\mathrm{arg\\,min}}\\limits",
+      "\\argmax": "\\mathop{\\mathrm{arg\\,max}}\\limits",
+      "\\abs": "\\left\\lvert #1 \\right\\rvert",
+      "\\norm": "\\left\\lVert #1 \\right\\rVert",
+      "\\set": "\\left\\{ #1 \\right\\}",
+      "\\floor": "\\left\\lfloor #1 \\right\\rfloor",
+      "\\ceil": "\\left\\lceil #1 \\right\\rceil"
+    }
+  };
+
+  const processed = await unified()
+    .use(remarkParse)
+    .use(remarkMath)
+    .use(remarkGfm)
+    .use(remarkRehype)
+    .use(rehypeKatex, katexOptions)
+    .use(rehypeStringify)
+    .process(markdown || '');
   const body = String(processed);
   const themeKey: MarkdownTheme = theme || 'classic';
+
+  const pageCss = print
+    ? `
+      @media print {
+        @page {
+          size: ${print.widthMm && print.heightMm ? `${print.widthMm}mm ${print.heightMm}mm` : 'auto'}${print.orientation ? ` ${print.orientation}` : ''};
+          margin: ${print.marginMm ?? 10}mm;
+        }
+        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      }
+      pre, table, blockquote, .katex-display { break-inside: avoid; page-break-inside: avoid; }
+    `
+    : '';
 
   return `<!DOCTYPE html>
   <html lang="zh-CN">
@@ -123,7 +188,8 @@ export const markdownToHtml = async (markdown: string, theme: MarkdownTheme, tit
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <title>${title || '导出内容'}</title>
       <style>${katexCss}</style>
-      <style>${baseCss}${themeCss[themeKey]}</style>
+      <style>${katexExtraCss}</style>
+      <style>${baseCss}${themeCss[themeKey]}${pageCss}</style>
     </head>
     <body>
       <div class="container">

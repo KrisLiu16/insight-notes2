@@ -83,6 +83,11 @@ pre {
   display: block;
   min-width: max-content;
 }
+.markdown-body .katex { color: inherit; }
+.markdown-body .katex-display { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; margin: 0.75rem 0; }
+.markdown-body .katex-error { color: #dc2626; }
+.prose-invert .katex { color: inherit; }
+.prose-invert .katex-error { color: #fca5a5; }
 .markdown-body .inline-code-marker {
   display: inline !important;
   white-space: break-spaces !important;

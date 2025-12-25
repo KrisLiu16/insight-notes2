@@ -3,6 +3,7 @@ import ReactMarkdown, { UrlTransform, defaultUrlTransform } from 'react-markdown
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
+import renderMathInElement from 'katex/contrib/auto-render';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { dracula } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -167,6 +168,7 @@ const CodeBlock = memo(({ language, codeString, style }: { language: string; cod
 
 const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments = {}, theme = 'classic', showToc = true, onLinkClick, validNoteIds }) => {
   const deferredContent = useDeferredValue(content);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   const headings = useMemo(() => {
     const lines = deferredContent.split('\n');
@@ -482,8 +484,48 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments 
     };
   }, [style, onLinkClick, validNoteIds]);
 
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    try {
+      renderMathInElement(el, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$', right: '$', display: false },
+          { left: '\\(', right: '\\)', display: false },
+          { left: '\\[', right: '\\]', display: true },
+          { left: '\\begin{aligned}', right: '\\end{aligned}', display: true },
+          { left: '\\begin{align}', right: '\\end{align}', display: true },
+          { left: '\\begin{cases}', right: '\\end{cases}', display: true },
+          { left: '\\begin{pmatrix}', right: '\\end{pmatrix}', display: true },
+          { left: '\\begin{bmatrix}', right: '\\end{bmatrix}', display: true },
+          { left: '\\begin{matrix}', right: '\\end{matrix}', display: true },
+        ],
+        throwOnError: false,
+        strict: false,
+        trust: false,
+        errorColor: '#dc2626',
+        macros: {
+          "\\RR": "\\mathbb{R}",
+          "\\NN": "\\mathbb{N}",
+          "\\ZZ": "\\mathbb{Z}",
+          "\\QQ": "\\mathbb{Q}",
+          "\\CC": "\\mathbb{C}",
+          "\\bm": "\\boldsymbol{#1}",
+          "\\argmin": "\\mathop{\\mathrm{arg\\,min}}\\limits",
+          "\\argmax": "\\mathop{\\mathrm{arg\\,max}}\\limits",
+          "\\abs": "\\left\\lvert #1 \\right\\rvert",
+          "\\norm": "\\left\\lVert #1 \\right\\rVert",
+          "\\set": "\\left\\{ #1 \\right\\}",
+          "\\floor": "\\left\\lfloor #1 \\right\\rfloor",
+          "\\ceil": "\\left\\lceil #1 \\right\\rceil"
+        }
+      });
+    } catch {}
+  }, [deferredContent]);
+
   return (
-    <div className={`relative prose max-w-none prose-headings:font-bold prose-img:rounded-lg markdown-body break-words ${style.prose} ${style.link} ${style.container}`}>
+    <div ref={containerRef} className={`relative prose max-w-none prose-headings:font-bold prose-img:rounded-lg markdown-body break-words ${style.prose} ${style.link} ${style.container}`}>
       {showToc && headings.length > 0 && (
         <div className="hidden lg:block absolute left-[-220px] top-0 h-full w-48 text-xs text-slate-500">
           <div className="sticky top-6 bg-white/80 backdrop-blur rounded-xl border border-slate-200 shadow-sm p-3 space-y-2">
@@ -510,8 +552,28 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments 
         </div>
       )}
       <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex]}
+        remarkPlugins={[remarkMath, remarkGfm]}
+        rehypePlugins={[[rehypeKatex, {
+          throwOnError: false,
+          strict: false,
+          trust: false,
+          errorColor: '#dc2626',
+          macros: {
+            "\\RR": "\\mathbb{R}",
+            "\\NN": "\\mathbb{N}",
+            "\\ZZ": "\\mathbb{Z}",
+            "\\QQ": "\\mathbb{Q}",
+            "\\CC": "\\mathbb{C}",
+            "\\bm": "\\boldsymbol{#1}",
+            "\\argmin": "\\mathop{\\mathrm{arg\\,min}}\\limits",
+            "\\argmax": "\\mathop{\\mathrm{arg\\,max}}\\limits",
+            "\\abs": "\\left\\lvert #1 \\right\\rvert",
+            "\\norm": "\\left\\lVert #1 \\right\\rVert",
+            "\\set": "\\left\\{ #1 \\right\\}",
+            "\\floor": "\\left\\lfloor #1 \\right\\rfloor",
+            "\\ceil": "\\left\\lceil #1 \\right\\rceil"
+          }
+        }]]}
         urlTransform={allowDataUrl}
         components={components as any}
       >

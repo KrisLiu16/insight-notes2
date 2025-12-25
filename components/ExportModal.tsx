@@ -31,6 +31,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ open, note, theme, onClose, o
   const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
   const [scale, setScale] = useState<number>(1);
   const [margin, setMargin] = useState<number>(10); // mm
+  const [exportDpi, setExportDpi] = useState<number>(300);
   const [customWidth, setCustomWidth] = useState<number>(900);
   const [customHeight, setCustomHeight] = useState<number>(1200);
   const [showTitle, setShowTitle] = useState(true);
@@ -62,13 +63,29 @@ const ExportModal: React.FC<ExportModalProps> = ({ open, note, theme, onClose, o
       }
 
       if (format === 'html') {
-        const html = await markdownToHtml(note.content, theme, note.title);
+        const clone = previewRef.current.cloneNode(true) as HTMLDivElement;
+        clone.style.transform = '';
+        clone.style.marginLeft = 'auto';
+        clone.style.marginRight = 'auto';
+        clone.style.marginLeft = 'auto';
+        clone.style.marginRight = 'auto';
+        clone.style.boxSizing = 'border-box';
+        const styleTexts = Array.from(document.querySelectorAll('style'))
+          .map(s => s.textContent || '')
+          .join('\n');
+        const pageCss = `@media print{ @page { size: ${pxToMm(sizePx.width)}mm ${pxToMm(sizePx.height)}mm ${orientation}; margin: ${margin}mm; } body{ -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+        pre, table, blockquote, .katex-display { break-inside: avoid; page-break-inside: avoid; }
+        html, body { margin: 0; height: 100%; }
+        .export-root { display: flex; justify-content: center; align-items: flex-start; padding: ${marginPx}px; background: white; }
+        `;
+        const html = `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>${note.title || '导出内容'}</title><style>${styleTexts}\n${pageCss}</style></head><body><div class="export-root">${clone.outerHTML}</div></body></html>`;
         const blob = new Blob([html], { type: 'text/html' });
         await saveFile(blob, { suggestedName: `${note.title || 'note'}.html`, mime: 'text/html' });
         return;
       }
 
-      const dataUrl = await htmlToImage.toPng(previewRef.current, { pixelRatio: scale });
+      const pixelRatio = Math.max(1, exportDpi / 96);
+      const dataUrl = await htmlToImage.toPng(previewRef.current, { pixelRatio });
       if (format === 'png') {
         const pngBlob = await (await fetch(dataUrl)).blob();
         await saveFile(pngBlob, { suggestedName: `${note.title || 'note'}.png`, mime: 'image/png' });
@@ -283,6 +300,20 @@ const ExportModal: React.FC<ExportModalProps> = ({ open, note, theme, onClose, o
                   value={margin}
                   onChange={e => setMargin(Number(e.target.value) || 0)}
                   className="w-20 px-3 py-1.5 rounded-lg border border-slate-200 text-sm"
+                />
+              </label>
+
+              <label className="flex items-center justify-between text-sm text-slate-600">
+                <span className="flex items-center gap-1">
+                  导出 DPI
+                </span>
+                <input
+                  type="number"
+                  min={72}
+                  max={600}
+                  value={exportDpi}
+                  onChange={e => setExportDpi(Number(e.target.value) || 300)}
+                  className="w-24 px-3 py-1.5 rounded-lg border border-slate-200 text-sm"
                 />
               </label>
             </div>

@@ -15,6 +15,8 @@
     "preview": "vite preview",
     "electron:dev": "npm run build && electron .",
     "electron:build": "node scripts/clean-release.js && npm run icon:generate && npm run build && electron-builder",
+    "electron:build:mac-arm64": "node scripts/clean-release.js && npm run icon:generate && npm run build && electron-builder --mac --arm64",
+    "electron:build:win-x64": "node scripts/clean-release.js && npm run icon:generate && npm run build && electron-builder --win --x64",
     "icon:generate": "node scripts/generate-icon.js"
   },
   "dependencies": {
@@ -39,7 +41,8 @@
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
     "remark-parse": "^11.0.0",
-    "remark-rehype": "^11.1.2"
+    "remark-rehype": "^11.1.2",
+    "katex": "^0.16.9"
   },
   "devDependencies": {
     "@types/react": "18.3.12",
@@ -76,14 +79,22 @@
       {
         "from": "resources",
         "to": "."
+      },
+      {
+        "from": "node_modules/sharp",
+        "to": "node_modules/sharp"
       }
     ],
     "asar": true,
+    "asarUnpack": [
+      "**/node_modules/sharp/**"
+    ],
     "mac": {
       "icon": "resources/icon.icns",
+      "artifactName": "${productName}-${version}-mac-${arch}.${ext}",
       "target": [
-        "dmg",
-        "zip"
+        { "target": "dmg", "arch": ["arm64"] },
+        { "target": "zip", "arch": ["arm64"] }
       ],
       "category": "public.app-category.productivity",
       "hardenedRuntime": true,
@@ -93,11 +104,20 @@
     },
     "win": {
       "icon": "resources/icon.png",
+      "artifactName": "${productName}-${version}-win-${arch}.${ext}",
       "target": [
-        "nsis",
-        "zip"
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "zip", "arch": ["x64"] }
       ],
       "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Insight Notes"
     },
     "linux": {
       "icon": "resources/icon.png",
