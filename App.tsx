@@ -10,7 +10,6 @@ import Sidebar from './components/Sidebar';
 import NoteList from './components/NoteList';
 import EditorToolbar from './components/EditorToolbar';
 import EditorContent from './components/EditorContent';
-import Logo from './components/Logo';
 import DeleteConfirm from './components/DeleteConfirm';
 import AiReviewModal from './components/AiReviewModal';
 import AiChatPanel, { ChatMessage } from './components/AiChatPanel';

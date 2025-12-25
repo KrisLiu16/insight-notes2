@@ -15,16 +15,13 @@
     "preview": "vite preview",
     "electron:dev": "npm run build && electron .",
     "electron:build": "node scripts/clean-release.js && npm run icon:generate && npm run build && electron-builder",
-    "icon:generate": "node scripts/generate-icon.js",
-    "index:build": "node scripts/project-index.js build",
-    "index:query": "node scripts/project-index.js query"
+    "icon:generate": "node scripts/generate-icon.js"
   },
   "dependencies": {
     "@codemirror/lang-markdown": "^6.2.2",
     "@codemirror/language-data": "^6.5.1",
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.35.0",
-    "@google/genai": "^1.30.0",
     "@uiw/react-codemirror": "^4.23.6",
     "diff": "^8.0.2",
     "html-to-image": "^1.11.13",

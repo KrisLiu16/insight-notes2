@@ -10,7 +10,6 @@ import { MarkdownTheme, Note, NoteStats, ViewMode } from '../types';
 import { searchPanelTheme, searchLocalization } from './CodeMirrorTheme';
 import TagEditor from './TagEditor';
 import MarkdownPreview from './MarkdownPreview';
-import BacklinksPanel from './BacklinksPanel';
 
 interface EditorContentProps {
   activeNote: Note;
@@ -100,22 +99,6 @@ const EditorContent: React.FC<EditorContentProps> = ({
     view.dispatch({ selection: { anchor, head } });
     setSelectionState({ start: anchor, end: head });
   }, [activeNote.id, selection.start, selection.end]);
-
-  useEffect(() => {
-    const view = editorViewRef.current;
-    const pv = previewRef.current;
-    if (!view || !pv) return;
-
-    // Remove the previous scroll synchronization
-    // const onScroll = () => { ... }
-    // const scroller = view.scrollDOM;
-    // scroller.addEventListener('scroll', onScroll);
-    // return () => scroller.removeEventListener('scroll', onScroll);
-    
-    // We do NOT want to sync scroll on every scroll event anymore.
-    // We only want to sync when the user moves the cursor (click or arrow keys),
-    // which is handled in handleEditorUpdate.
-  }, [activeNote.id]);
 
   const createAttachmentId = () => `att-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 

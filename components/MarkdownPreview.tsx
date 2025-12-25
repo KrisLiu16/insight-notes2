@@ -168,89 +168,23 @@ const CodeBlock = memo(({ language, codeString, style }: { language: string; cod
 const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments = {}, theme = 'classic', showToc = true, onLinkClick, validNoteIds }) => {
   const deferredContent = useDeferredValue(content);
   
-  const blockMap = useMemo(() => {
-    const lines = deferredContent.split('\n');
-    const blocks: { line: number; type: string; text: string }[] = [];
-    
-    let currentBlockType = 'p';
-    let currentBlockStart = 0;
-    let currentBlockText = '';
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const trimmed = line.trim();
-      
-      if (trimmed.startsWith('#')) {
-        if (currentBlockText) {
-          blocks.push({ line: currentBlockStart, type: currentBlockType, text: currentBlockText });
-        }
-        const level = trimmed.match(/^#+/)?.[0].length || 1;
-        blocks.push({ line: i + 1, type: `h${level}`, text: trimmed.replace(/^#+\s+/, '') });
-        currentBlockType = 'p';
-        currentBlockStart = i + 1;
-        currentBlockText = '';
-      } else if (trimmed.startsWith('```')) {
-        if (currentBlockText) {
-          blocks.push({ line: currentBlockStart, type: currentBlockType, text: currentBlockText });
-        }
-        const lang = trimmed.slice(3).trim() || 'text';
-        blocks.push({ line: i + 1, type: 'code', text: lang });
-        currentBlockType = 'p';
-        currentBlockStart = i + 1;
-        currentBlockText = '';
-      } else if (trimmed.startsWith('>')) {
-        if (currentBlockType !== 'blockquote') {
-          if (currentBlockText) {
-            blocks.push({ line: currentBlockStart, type: currentBlockType, text: currentBlockText });
-          }
-          currentBlockType = 'blockquote';
-          currentBlockStart = i + 1;
-          currentBlockText = '';
-        }
-      } else if (trimmed.match(/^[-*+]\s/) || trimmed.match(/^\d+\.\s/)) {
-        if (currentBlockType !== 'li') {
-          if (currentBlockText) {
-            blocks.push({ line: currentBlockStart, type: currentBlockType, text: currentBlockText });
-          }
-          currentBlockType = 'li';
-          currentBlockStart = i + 1;
-          currentBlockText = '';
-        }
-      } else if (trimmed === '') {
-        if (currentBlockText) {
-          blocks.push({ line: currentBlockStart, type: currentBlockType, text: currentBlockText });
-          currentBlockType = 'p';
-          currentBlockStart = i + 1;
-          currentBlockText = '';
-        }
-      } else {
-        if (!currentBlockText) {
-          currentBlockStart = i + 1;
-        }
-        currentBlockText += (currentBlockText ? '\n' : '') + line;
-      }
-    }
-    
-    if (currentBlockText) {
-      blocks.push({ line: currentBlockStart, type: currentBlockType, text: currentBlockText });
-    }
-    
-    return blocks;
-  }, [deferredContent]);
-  
   const headings = useMemo(() => {
-    return blockMap
-      .filter(b => b.type.startsWith('h'))
-      .map(b => {
-        const level = parseInt(b.type.slice(1));
-        const text = b.text
+    const lines = deferredContent.split('\n');
+    return lines
+      .map((line, index) => {
+        const match = /^(#{1,6})\s+(.+)$/.exec(line);
+        if (!match) return null;
+        const level = match[1].length;
+        const rawText = match[2].trim();
+        const text = rawText
           .replace(/\*\*(.*?)\*\*/g, '$1')
           .replace(/\*(.*?)\*/g, '$1')
           .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
           .replace(/`([^`]+)`/g, '$1');
-        return { level, text, id: slugify(b.text), line: b.line };
-      });
-  }, [blockMap]);
+        return { level, text, id: slugify(rawText), line: index + 1 };
+      })
+      .filter(Boolean) as { level: number; text: string; id: string; line: number }[];
+  }, [deferredContent]);
 
   const themeStyles = useMemo(
     () => ({
