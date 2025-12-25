@@ -1,0 +1,31 @@
+# Node / Vite
+node_modules
+dist
+dist-ssr
+.eslintcache
+.turbo
+
+# Env / local
+.env
+.env.*
+!.env.example
+
+# Editor
+.DS_Store
+.idea
+*.swp
+*.swo
+*.log
+.vscode/*
+!.vscode/extensions.json
+
+# Electron build artifacts
+release
+release-build
+*.exe
+*.dmg
+*.AppImage
+*.deb
+AGENTS.md
+# Others
+*.local

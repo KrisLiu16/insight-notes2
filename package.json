@@ -1,0 +1,114 @@
+{
+  "name": "insight-notes",
+  "private": true,
+  "version": "1.0.1",
+  "type": "module",
+  "main": "electron/main.js",
+  "author": {
+    "name": "Kris",
+    "email": "kris@example.com"
+  },
+  "description": "Insight Notes - AI powered note app with markdown, Mermaid, KaTeX, multi-theme and exports",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "electron:dev": "npm run build && electron .",
+    "electron:build": "node scripts/clean-release.js && npm run icon:generate && npm run build && electron-builder",
+    "icon:generate": "node scripts/generate-icon.js",
+    "index:build": "node scripts/project-index.js build",
+    "index:query": "node scripts/project-index.js query"
+  },
+  "dependencies": {
+    "@codemirror/lang-markdown": "^6.2.2",
+    "@codemirror/language-data": "^6.5.1",
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/view": "^6.35.0",
+    "@google/genai": "^1.30.0",
+    "@uiw/react-codemirror": "^4.23.6",
+    "diff": "^8.0.2",
+    "html-to-image": "^1.11.13",
+    "jspdf": "^3.0.4",
+    "lucide-react": "^0.555.0",
+    "mermaid": "^11.12.1",
+    "react": "18.3.1",
+    "react-diff-viewer-continued": "^3.4.0",
+    "react-dom": "18.3.1",
+    "react-json-view": "^1.21.3",
+    "react-markdown": "^10.1.0",
+    "react-syntax-highlighter": "^16.1.0",
+    "rehype-katex": "^7.0.1",
+    "rehype-stringify": "^10.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.2"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "sharp": "^0.34.5",
+    "@tailwindcss/typography": "^0.5.19",
+    "@types/diff": "^7.0.2",
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.22",
+    "electron": "^30.0.9",
+    "electron-builder": "^25.1.8",
+    "png-to-ico": "^3.0.1",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.14",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "~5.8.2",
+    "vite": "^5.4.11"
+  },
+  "build": {
+    "appId": "com.insightnotes.desktop",
+    "productName": "Insight Notes",
+    "icon": "resources/icon.png",
+    "directories": {
+      "output": "release",
+      "buildResources": "resources"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "resources",
+        "to": "."
+      }
+    ],
+    "asar": true,
+    "mac": {
+      "icon": "resources/icon.icns",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.productivity",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "win": {
+      "icon": "resources/icon.png",
+      "target": [
+        "nsis",
+        "zip"
+      ],
+      "signAndEditExecutable": false
+    },
+    "linux": {
+      "icon": "resources/icon.png",
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility"
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "name": "Insight Notes - Personal AI Notebook",
+  "description": "A polished personal knowledge system with Markdown editing, Mermaid diagrams, local persistence, and Gemini/OpenAI-powered writing and organization.",
+  "requestFramePermissions": []
+}
