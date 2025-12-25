@@ -103,7 +103,7 @@
       "entitlementsInherit": "build/entitlements.mac.plist"
     },
     "win": {
-      "icon": "resources/icon.png",
+      "icon": "resources/icon.ico",
       "artifactName": "${productName}-${version}-win-${arch}.${ext}",
       "target": [
         { "target": "nsis", "arch": ["x64"] },
@@ -114,9 +114,11 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
+      "menuCategory": true,
       "perMachine": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
+      "runAfterFinish": true,
       "shortcutName": "Insight Notes"
     },
     "linux": {
