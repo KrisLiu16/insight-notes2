@@ -115,6 +115,25 @@ if (!gotTheLock) {
       }
     });
 
+    ipcMain.handle('read-file-text', async (_event, { urlOrPath }) => {
+      try {
+        const filePath = String(urlOrPath || '').startsWith('file:') ? fileURLToPath(String(urlOrPath)) : String(urlOrPath);
+        return await fs.promises.readFile(filePath, 'utf-8');
+      } catch (error) {
+        return { error: error.message };
+      }
+    });
+
+    ipcMain.handle('read-file-base64', async (_event, { urlOrPath }) => {
+      try {
+        const filePath = String(urlOrPath || '').startsWith('file:') ? fileURLToPath(String(urlOrPath)) : String(urlOrPath);
+        const buf = await fs.promises.readFile(filePath);
+        return { base64: buf.toString('base64') };
+      } catch (error) {
+        return { error: error.message };
+      }
+    });
+
     const template = [
       {
         label: '文件',

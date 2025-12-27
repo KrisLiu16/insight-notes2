@@ -49,6 +49,9 @@ declare global {
     desktop?: {
       selectDirectory: () => Promise<string>;
       runGit: (cwd: string, args: string[]) => Promise<{ stdout?: string; stderr?: string; error?: string }>;
+      proxyRequest?: (url: string, options: any) => Promise<any>;
+      readFileText?: (urlOrPath: string) => Promise<string | { error: string }>;
+      readFileBase64?: (urlOrPath: string) => Promise<{ base64?: string; error?: string }>;
       onNavigate: (handler: (payload: { action: string }) => void) => void;
     };
   }

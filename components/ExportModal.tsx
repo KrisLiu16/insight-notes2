@@ -53,6 +53,89 @@ const ExportModal: React.FC<ExportModalProps> = ({ open, note, theme, onClose, o
   // Convert margin mm to px for preview padding
   const marginPx = useMemo(() => mmToPx(margin), [margin]);
 
+  const getAssetMime = (urlOrPath: string) => {
+    const clean = urlOrPath.split('#')[0].split('?')[0].toLowerCase();
+    if (clean.endsWith('.woff2')) return 'font/woff2';
+    if (clean.endsWith('.woff')) return 'font/woff';
+    if (clean.endsWith('.ttf')) return 'font/ttf';
+    if (clean.endsWith('.otf')) return 'font/otf';
+    if (clean.endsWith('.svg')) return 'image/svg+xml';
+    if (clean.endsWith('.png')) return 'image/png';
+    if (clean.endsWith('.jpg') || clean.endsWith('.jpeg')) return 'image/jpeg';
+    if (clean.endsWith('.webp')) return 'image/webp';
+    if (clean.endsWith('.gif')) return 'image/gif';
+    return 'application/octet-stream';
+  };
+
+  const fetchText = async (absUrl: string) => {
+    if (absUrl.startsWith('http://') || absUrl.startsWith('https://')) {
+      const res = await fetch(absUrl);
+      return await res.text();
+    }
+    if (absUrl.startsWith('file:') && window.desktop?.readFileText) {
+      const res = await window.desktop.readFileText(absUrl);
+      if (typeof res === 'string') return res;
+      throw new Error((res as any)?.error || '读取文件失败');
+    }
+    const res = await fetch(absUrl);
+    return await res.text();
+  };
+
+  const fetchBase64 = async (absUrl: string) => {
+    if (absUrl.startsWith('http://') || absUrl.startsWith('https://')) {
+      const res = await fetch(absUrl);
+      const buf = await res.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      let binary = '';
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      return btoa(binary);
+    }
+    if (absUrl.startsWith('file:') && window.desktop?.readFileBase64) {
+      const res = await window.desktop.readFileBase64(absUrl);
+      if (res?.base64) return res.base64;
+      throw new Error(res?.error || '读取文件失败');
+    }
+    const res = await fetch(absUrl);
+    const buf = await res.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    return btoa(binary);
+  };
+
+  const inlineCssAssets = async (cssText: string, baseUrl: string) => {
+    const urlRegex = /url\(\s*(['"]?)([^'"\)]+)\1\s*\)/g;
+    const rawUrls = new Set<string>();
+    let m: RegExpExecArray | null;
+    while ((m = urlRegex.exec(cssText))) {
+      const raw = m[2].trim();
+      if (!raw || raw.startsWith('data:') || raw.startsWith('#')) continue;
+      rawUrls.add(raw);
+    }
+
+    const urlToData = new Map<string, string>();
+    for (const raw of rawUrls) {
+      const mime = getAssetMime(raw);
+      if (!/(font\/woff2|font\/woff|font\/ttf|font\/otf|image\/svg\+xml|image\/png|image\/jpeg|image\/webp|image\/gif)/.test(mime)) {
+        continue;
+      }
+      const abs = new URL(raw, baseUrl).href;
+      try {
+        const b64 = await fetchBase64(abs);
+        urlToData.set(raw, `data:${mime};base64,${b64}`);
+      } catch {
+        continue;
+      }
+    }
+
+    return cssText.replace(urlRegex, (_match, _q, raw) => {
+      const key = String(raw).trim();
+      const replacement = urlToData.get(key);
+      if (!replacement) return `url(${key})`;
+      return `url("${replacement}")`;
+    });
+  };
+
   const handleDownload = async () => {
     if (!note || !previewRef.current) return;
     setLoading(true);
@@ -67,18 +150,34 @@ const ExportModal: React.FC<ExportModalProps> = ({ open, note, theme, onClose, o
         clone.style.transform = '';
         clone.style.marginLeft = 'auto';
         clone.style.marginRight = 'auto';
-        clone.style.marginLeft = 'auto';
-        clone.style.marginRight = 'auto';
         clone.style.boxSizing = 'border-box';
-        const styleTexts = Array.from(document.querySelectorAll('style'))
-          .map(s => s.textContent || '')
-          .join('\n');
-        const pageCss = `@media print{ @page { size: ${pxToMm(sizePx.width)}mm ${pxToMm(sizePx.height)}mm ${orientation}; margin: ${margin}mm; } body{ -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-        pre, table, blockquote, .katex-display { break-inside: avoid; page-break-inside: avoid; }
-        html, body { margin: 0; height: 100%; }
-        .export-root { display: flex; justify-content: center; align-items: flex-start; padding: ${marginPx}px; background: white; }
-        `;
-        const html = `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>${note.title || '导出内容'}</title><style>${styleTexts}\n${pageCss}</style></head><body><div class="export-root">${clone.outerHTML}</div></body></html>`;
+
+        const baseUrl = window.location.href;
+        const styleTagCss = Array.from(document.querySelectorAll('style')).map(s => s.textContent || '');
+        const linkEls = Array.from(document.querySelectorAll('link[rel="stylesheet"][href]')) as HTMLLinkElement[];
+        const linkCss = await Promise.all(
+          linkEls.map(async (l) => {
+            const href = l.getAttribute('href') || '';
+            if (!href) return '';
+            const abs = new URL(href, baseUrl).href;
+            try {
+              return await fetchText(abs);
+            } catch {
+              return '';
+            }
+          })
+        );
+
+        const mergedCss = [...styleTagCss, ...linkCss].filter(Boolean).join('\n');
+        const inlinedCss = await inlineCssAssets(mergedCss, baseUrl);
+
+        const pageSize = (
+          paperSize === 'a4' ? `A4 ${orientation}` :
+          paperSize === 'letter' ? `Letter ${orientation}` :
+          `${pxToMm(sizePx.width)}mm ${pxToMm(sizePx.height)}mm ${orientation}`
+        );
+        const pageCss = `@media print{ @page { size: ${pageSize}; margin: ${margin}mm; } body{ -webkit-print-color-adjust: exact; print-color-adjust: exact; } }\npre, table, blockquote, .katex-display { break-inside: avoid; page-break-inside: avoid; }\nhtml, body { margin: 0; height: 100%; }\n.export-root { display: flex; justify-content: center; align-items: flex-start; padding: ${marginPx}px; background: white; }`;
+        const html = `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>${note.title || '导出内容'}</title><style>${inlinedCss}\n${pageCss}</style></head><body><div class="export-root">${clone.outerHTML}</div></body></html>`;
         const blob = new Blob([html], { type: 'text/html' });
         await saveFile(blob, { suggestedName: `${note.title || 'note'}.html`, mime: 'text/html' });
         return;

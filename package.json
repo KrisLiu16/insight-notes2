@@ -1,7 +1,7 @@
 {
   "name": "insight-notes",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.1.0",
   "type": "module",
   "main": "electron/main.js",
   "author": {
@@ -17,6 +17,9 @@
     "electron:build": "node scripts/clean-release.js && npm run icon:generate && npm run build && electron-builder",
     "electron:build:mac-arm64": "node scripts/clean-release.js && npm run icon:generate && npm run build && electron-builder --mac --arm64",
     "electron:build:win-x64": "node scripts/clean-release.js && npm run icon:generate && npm run build && electron-builder --win --x64",
+    "electron:build:mac-arm64:noclean": "npm run icon:generate && npm run build && electron-builder --mac --arm64",
+    "electron:build:win-x64:noclean": "npm run icon:generate && npm run build && electron-builder --win --x64",
+    "electron:build:all": "node scripts/clean-release.js && npm run electron:build:win-x64:noclean && npm run electron:build:mac-arm64:noclean",
     "icon:generate": "node scripts/generate-icon.js"
   },
   "dependencies": {
